@@ -131,11 +131,14 @@ with tabPlan:
             for step in plan["steps"]:
                 st.write(step)
             st.caption("Use the dose on your label.")
-            # 5. Mode A vs B radio + one figure
-            choice = st.radio("Show route", ["Spray everything", "AI-targeted"], horizontal=True, key="sp_route")
-            mk = "A" if choice == "Spray everything" else "B"
-            fig = field_sim.draw(grid, result[mk], f"{'Mode A' if mk=='A' else 'Mode B'}: {result[mk]['litres']} L, {result[mk]['seconds']} s")
-            st.pyplot(fig)
+            # 5. Simulation fills automatically from the detected grid
+            st.subheader("Simulation (auto-filled from this photo)")
+            figA = field_sim.draw(grid, result["A"], f"Mode A: spray all - {result['A']['litres']} L, {result['A']['seconds']} s")
+            figB = field_sim.draw(grid, result["B"], f"Mode B: AI-targeted - {result['B']['litres']} L, {result['B']['seconds']} s")
+            ca, cb = st.columns(2)
+            ca.pyplot(figA)
+            cb.pyplot(figB)
+            st.success(f"Pesticide saved: {result['litres_saved_pct']}%  |  Time saved: {result['time_saved_pct']}%")
             # 6. download buttons
             df = pd.DataFrame(plan["per_square"])
             csv_bytes = df.to_csv(index=False).encode()
