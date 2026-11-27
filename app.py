@@ -48,10 +48,23 @@ with tab0:
         ci = class_names.index(label)
         hm, ov = predict.gradcam(model, img, ci)
         st.image(cv2.cvtColor(ov, cv2.COLOR_BGR2RGB), caption="Grad-CAM overlay")
-        # spray grid
+        # spray grid (rendered as image)
         grid = predict.grid_decision(hm, conf)
         st.write("3x3 spray grid:")
-        st.table(grid)
+        field_grid = []
+        for r in range(3):
+            row = []
+            for c in range(3):
+                if grid[r][c] == "spray":
+                    row.append(("infected", "Moderate"))
+                elif grid[r][c] == "retake":
+                    row.append(("retake", None))
+                else:
+                    row.append(("healthy", None))
+            field_grid.append(row)
+        resB = field_sim.simulate(field_grid, "B")
+        fig = field_sim.draw(field_grid, resB, "AI-targeted spray grid")
+        st.pyplot(fig)
         # advice
         advice = rag.advice_for(label)
         if advice is None:
@@ -79,7 +92,20 @@ with tabR:
             st.write(f"**Disease:** {r['disease']}  (conf {r['confidence']:.2f})")
             st.write(f"**Severity:** {r['severity']['level']} ({r['severity']['pct']}%)")
             st.write("**Spray these sections (row, col):**", r["sections_to_spray"])
-            st.table(r["grid"])
+            field_grid = []
+            for row in r["grid"]:
+                rr = []
+                for cell in row:
+                    if cell == "spray":
+                        rr.append(("infected", "Moderate"))
+                    elif cell == "retake":
+                        rr.append(("retake", None))
+                    else:
+                        rr.append(("healthy", None))
+                field_grid.append(rr)
+            resB = field_sim.simulate(field_grid, "B")
+            fig = field_sim.draw(field_grid, resB, "AI-targeted spray grid")
+            st.pyplot(fig)
             st.write(f"Mode A (spray all): {r['litres_mode_a']} L, {r['seconds_mode_a']} s")
             st.write(f"Mode B (targeted): {r['litres_mode_b']} L, {r['seconds_mode_b']} s  (saved {r['litres_saved_pct']}%)")
             st.subheader(r["weather"]["decision"])
