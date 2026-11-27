@@ -1,0 +1,20 @@
+{
+  "seed": 42,
+  "classes": [
+    [
+      "Tomato___Tomato_mosaic_virus",
+      "Tomato___Septoria_leaf_spot",
+      "Tomato___Bacterial_spot"
+    ],
+    [
+      "Tomato___Late_blight",
+      "Tomato___healthy",
+      "Tomato___healthy"
+    ],
+    [
+      "Tomato___healthy",
+      "Tomato___Target_Spot",
+      "Tomato___Early_blight"
+    ]
+  ]
+}

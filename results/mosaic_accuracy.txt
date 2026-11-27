@@ -1,0 +1,8 @@
+Average tile accuracy over 5 synthetic mosaics: 0.622
+  mosaic 1: 0.667
+  mosaic 2: 0.556
+  mosaic 3: 0.556
+  mosaic 4: 0.556
+  mosaic 5: 0.778
+
+NOTE: These mosaics are SYNTHETIC (stitched validation photos). They do not represent real field images.
