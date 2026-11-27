@@ -27,10 +27,11 @@ def leaf_mask(img_bgr):
     return out
 
 
-def lesion_mask(img_bgr, leaf):
-    """Pixels inside the leaf that are not healthy green (OpenCV hue 35-85)."""
+def lesion_mask(img_bgr, leaf, healthy_hue=(35, 85), sat_min=40, val_min=40):
+    """Pixels inside the leaf that are not healthy green (hue range configurable)."""
     hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
-    healthy = cv2.inRange(hsv, (35, 40, 40), (85, 255, 255))
+    healthy = cv2.inRange(hsv, (healthy_hue[0], sat_min, val_min),
+                          (healthy_hue[1], 255, 255))
     les = cv2.bitwise_and(leaf, cv2.bitwise_not(healthy))
     return cv2.morphologyEx(les, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8))
 
@@ -41,17 +42,19 @@ def level_from_pct(pct):
     return "Moderate" if pct <= MODERATE_MAX else "Severe"
 
 
-def estimate_severity(img_bgr):
-    leaf = leaf_mask(img_bgr)
+def estimate_severity(img_bgr, healthy_hue=(35, 85), sat_min=40, val_min=40, mask=None):
+    leaf = mask if mask is not None else leaf_mask(img_bgr)
     leaf_px = int(np.count_nonzero(leaf))
     if leaf_px < 500:  # nothing leaf-like found -> do not guess
         return {"pct": None, "level": "Retake photo", "overlay": img_bgr}
-    les = lesion_mask(img_bgr, leaf)
+    les = lesion_mask(img_bgr, leaf, healthy_hue=healthy_hue, sat_min=sat_min, val_min=val_min)
     pct = 100.0 * np.count_nonzero(les) / leaf_px
     overlay = img_bgr.copy()
     overlay[les > 0] = (0, 0, 255)  # lesions in red
     overlay = cv2.addWeighted(overlay, 0.6, img_bgr, 0.4, 0)
-    cv2.drawContours(overlay, cv2.findContours(leaf, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0], -1, (255, 0, 0), 2)
+    cnts = cv2.findContours(leaf, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
+    if cnts:
+        cv2.drawContours(overlay, cnts, -1, (255, 0, 0), 2)
     return {"pct": round(pct, 1), "level": level_from_pct(pct), "overlay": overlay}
 
 
