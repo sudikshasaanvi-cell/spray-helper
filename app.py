@@ -8,6 +8,7 @@ from field_sim import compare, draw
 from weather_rules import check_weather
 import predict
 import rag
+import recommend
 import config
 
 st.title("Smart Spray Helper (tomato)")
@@ -22,8 +23,8 @@ def load_model():
 
 model, class_names = load_model()
 
-tab0, tab1, tab2, tab3 = st.tabs(
-    ["Diagnose", "1. How bad is the leaf?", "2. Virtual field", "3. Weather check"])
+tab0, tabR, tab1, tab2, tab3 = st.tabs(
+    ["Diagnose", "Recommendation", "1. How bad is the leaf?", "2. Virtual field", "3. Weather check"])
 
 # ---------- Diagnose ----------
 with tab0:
@@ -60,6 +61,37 @@ with tab0:
                 st.markdown(ch["text"])
                 src = ch["source"]
                 st.markdown(f"Source: [{src}]({src})")
+
+# ---------- Recommendation ----------
+with tabR:
+    up = st.file_uploader("Upload a tomato leaf photo", type=["jpg", "jpeg", "png"], key="rec")
+    c1, c2, c3, c4 = st.columns(4)
+    t = c1.number_input("Temp (C)", value=28.0, key="rt")
+    h = c2.number_input("Humidity (%)", value=55.0, key="rh")
+    w = c3.number_input("Wind (km/h)", value=8.0, key="rw")
+    rn = c4.number_input("Rain (%)", value=10.0, key="rr")
+    if up:
+        img = cv2.imdecode(np.frombuffer(up.read(), np.uint8), cv2.IMREAD_COLOR)
+        r = recommend.recommend(img, t, h, w, rn)
+        if r["status"] == "retake":
+            st.warning("Low confidence. Retake the photo.")
+        else:
+            st.write(f"**Disease:** {r['disease']}  (conf {r['confidence']:.2f})")
+            st.write(f"**Severity:** {r['severity']['level']} ({r['severity']['pct']}%)")
+            st.write("**Spray these sections (row, col):**", r["sections_to_spray"])
+            st.table(r["grid"])
+            st.write(f"Mode A (spray all): {r['litres_mode_a']} L, {r['seconds_mode_a']} s")
+            st.write(f"Mode B (targeted): {r['litres_mode_b']} L, {r['seconds_mode_b']} s  (saved {r['litres_saved_pct']}%)")
+            st.subheader(r["weather"]["decision"])
+            for rule in r["weather"]["why"]:
+                st.write(f"- {rule['text']}")
+            advice = rag.advice_for(r["disease"])
+            if advice is None:
+                st.info("Ask your agriculture officer.")
+            else:
+                for ch in advice:
+                    st.markdown(ch["text"])
+                    st.markdown(f"Source: [{ch['source']}]({ch['source']})")
 
 # ---------- Severity tab (existing) ----------
 with tab1:
