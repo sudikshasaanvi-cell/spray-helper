@@ -73,6 +73,7 @@ with tabPlan:
         with st.expander("Inputs (advanced)"):
             rows = st.slider("Grid rows", 1, 6, 3, key="sp_rows")
             cols = st.slider("Grid cols", 1, 6, 3, key="sp_cols")
+            strictness = st.selectbox("Strictness", ["cautious", "balanced", "fewer"], index=1, key="sp_strict")
             buffer = st.checkbox("Spread buffer (spray neighbours of infected)", key="sp_buffer")
             price = st.number_input("Price per litre (optional)", value=0.0, min_value=0.0, key="sp_price")
             st.subheader("Weather")
@@ -89,7 +90,7 @@ with tabPlan:
                     img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
                     if img is None:
                         raise ValueError("bad")
-                    grid, cells, _ = field_map.analyze_field(img, rows, cols)
+                    grid, cells, _ = field_map.analyze_field(img, rows, cols, strictness=strictness)
                     result = field_sim.compare(grid, buffer=buffer,
                                               sec_move=10, sec_spray=15, litres_per_cell=0.5)
                     weather = {"temp_c": t, "humidity_pct": h, "wind_kmh": w, "rain_pct": rn}
