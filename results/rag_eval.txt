@@ -1,0 +1,4 @@
+bm25: top-5 hit rate = 1.000 (15/15)
+dense: top-5 hit rate = 0.733 (11/15)
+hybrid: top-5 hit rate = 0.867 (13/15)
+Questions: 15

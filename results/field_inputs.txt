@@ -1,0 +1,8 @@
+Samples 01-09 mapping:
+01-03: healthy (Tomato___healthy)
+04: Tomato___Early_blight
+05: Tomato___Late_blight
+06: Tomato___Leaf_Mold
+07: Tomato___Septoria_leaf_spot
+08-09: blurred copies of 04 and 05 (GaussianBlur kernel 51)
+Blurred indices: [8, 9]

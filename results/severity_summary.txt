@@ -1,0 +1,6 @@
+severity_1.png: Tomato___Early_blight -> pct=13.4 level=Moderate
+severity_2.png: Tomato___Late_blight -> pct=11.7 level=Mild
+severity_3.png: Tomato___Leaf_Mold -> pct=0.3 level=Mild
+severity_4.png: Tomato___Septoria_leaf_spot -> pct=32.5 level=Moderate
+severity_5.png: Tomato___Bacterial_spot -> pct=3.0 level=Mild
+Note: severity is colour-based and works best on plain-background single-leaf photos.

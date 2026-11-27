@@ -1,0 +1,25 @@
+Field grid (row-major):
+[('healthy', None), ('healthy', None), ('infected', 'Mild')]
+[('infected', 'Moderate'), ('infected', 'Mild'), ('infected', 'Mild')]
+[('infected', 'Moderate'), ('infected', 'Mild'), ('infected', 'Mild')]
+
+Mode A: 4.5 L, 225 s
+Mode B: 2.5 L, 195 s
+Pesticide saved: 44.4%
+Time saved: 13.3%
+Retake cells: []
+
+Assumption constants used:
+  DOSE_FACTOR = {'Mild': 0.6, 'Moderate': 1.0, 'Severe': 1.4}
+  sec_move default 10s, sec_spray 15s, litres_per_cell 0.5 (from field_sim / app sliders)
+
+Predictions:
+01.jpg -> Tomato___healthy (conf 1.00) -> ('healthy', None)
+02.jpg -> Tomato___healthy (conf 1.00) -> ('healthy', None)
+03.jpg -> Tomato___Target_Spot (conf 0.74) -> ('infected', 'Mild')
+04.jpg -> Tomato___Spider_mites Two-spotted_spider_mite (conf 0.79) -> ('infected', 'Moderate')
+05.jpg -> Tomato___Late_blight (conf 0.92) -> ('infected', 'Mild')
+06.jpg -> Tomato___Leaf_Mold (conf 1.00) -> ('infected', 'Mild')
+07.jpg -> Tomato___Septoria_leaf_spot (conf 0.81) -> ('infected', 'Moderate')
+08.jpg -> Tomato___Late_blight (conf 0.99) -> ('infected', 'Mild')
+09.jpg -> Tomato___Late_blight (conf 0.92) -> ('infected', 'Mild')

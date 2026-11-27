@@ -1,0 +1,16 @@
+question,expected_source
+"Dark concentric ring spots on older tomato leaves, what spray?",early_blight.txt
+"Mancozeb 0.2 percent for tomato disease control",early_blight.txt
+"Small grey centered spots on tomato leaves causing defoliation",septoria_leaf_spot.txt
+"Tomato plant wilting with brown vascular tissue inside stem",fusarium_wilt.txt
+"Bacterial ooze coming out of cut tomato stem",bacterial_wilt.txt
+"Seedlings rotting at soil line after transplanting",damping_off.txt
+"Downward curling and crinkling of tomato leaves with stunting",leaf_curl_virus.txt
+"Stunted tomato plants with upward curling of leaf margins",leaf_curl_tolcv.txt
+"Bronzed leaves and concentric rings on tomato fruit",tomato_spotted_wilt.txt
+"Thrips transmitting spotted wilt virus in tomato",spotted_wilt.txt
+"How to manage late blight in tomato?",tomato_ipm_niphm.txt
+"Tomato mosaic virus control measures",tomato_ipm_niphm.txt
+"Spider mite management on tomato crop",tomato_ipm_niphm.txt
+"IPM package for tomato cultivation",tomato_ipm_niphm.txt
+"Whitefly vector of tomato leaf curl",leaf_curl_tolcv.txt

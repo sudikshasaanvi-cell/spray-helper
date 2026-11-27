@@ -1,0 +1,14 @@
+Field photos used: 744
+Field accuracy: 0.2016 (150/744)
+Lab validation accuracy: 0.8125
+Drop: 61.1 points
+
+Per-class (correct/total):
+  Tomato___Bacterial_spot: 3/110 = 0.027
+  Tomato___Early_blight: 35/88 = 0.398
+  Tomato___Late_blight: 93/111 = 0.838
+  Tomato___Leaf_Mold: 0/91 = 0.000
+  Tomato___Septoria_leaf_spot: 13/151 = 0.086
+  Tomato___Tomato_Yellow_Leaf_Curl_Virus: 6/76 = 0.079
+  Tomato___Tomato_mosaic_virus: 0/54 = 0.000
+  Tomato___healthy: 0/63 = 0.000

@@ -1,19 +1,69 @@
-"""Streamlit demo:  streamlit run app.py
-NOTE: written but not run in the build sandbox (Streamlit was not installed there).
-Run it once yourself and fix anything it reports before the review.
-"""
+"""Streamlit demo: streamlit run app.py"""
 import cv2
 import numpy as np
 import streamlit as st
+
 from severity import estimate_severity
 from field_sim import compare, draw
 from weather_rules import check_weather
+import predict
+import rag
+import config
 
 st.title("Smart Spray Helper (tomato)")
-tab1, tab2, tab3 = st.tabs(["1. How bad is the leaf?", "2. Virtual field", "3. Weather check"])
 
-with tab1:
+
+@st.cache_resource
+def load_model():
+    m, names = predict.load()
+    rag.build_index()
+    return m, names
+
+
+model, class_names = load_model()
+
+tab0, tab1, tab2, tab3 = st.tabs(
+    ["Diagnose", "1. How bad is the leaf?", "2. Virtual field", "3. Weather check"])
+
+# ---------- Diagnose ----------
+with tab0:
     up = st.file_uploader("Upload a tomato leaf photo", type=["jpg", "jpeg", "png"])
+    if up:
+        img = cv2.imdecode(np.frombuffer(up.read(), np.uint8), cv2.IMREAD_COLOR)
+        label, conf = predict.predict(img)
+        st.write(f"**Disease:** {label}  |  **Confidence:** {conf:.2f}")
+        if label == "retake":
+            st.warning("Low confidence. Please retake the photo.")
+            st.stop()
+        # severity
+        sev = estimate_severity(img)
+        if sev["pct"] is None:
+            st.warning("Could not find a leaf for severity. Retake photo.")
+        else:
+            st.metric("Leaf area affected", f"{sev['pct']}%", sev["level"])
+        st.image(cv2.cvtColor(sev["overlay"], cv2.COLOR_BGR2RGB),
+                 caption="Red = affected area, blue line = leaf outline")
+        # gradcam
+        ci = class_names.index(label)
+        hm, ov = predict.gradcam(model, img, ci)
+        st.image(cv2.cvtColor(ov, cv2.COLOR_BGR2RGB), caption="Grad-CAM overlay")
+        # spray grid
+        grid = predict.grid_decision(hm, conf)
+        st.write("3x3 spray grid:")
+        st.table(grid)
+        # advice
+        advice = rag.advice_for(label)
+        if advice is None:
+            st.info("Ask your agriculture officer.")
+        else:
+            for ch in advice:
+                st.markdown(ch["text"])
+                src = ch["source"]
+                st.markdown(f"Source: [{src}]({src})")
+
+# ---------- Severity tab (existing) ----------
+with tab1:
+    up = st.file_uploader("Upload a tomato leaf photo", type=["jpg", "jpeg", "png"], key="sev")
     if up:
         img = cv2.imdecode(np.frombuffer(up.read(), np.uint8), cv2.IMREAD_COLOR)
         r = estimate_severity(img)
@@ -24,6 +74,7 @@ with tab1:
         st.image(cv2.cvtColor(r["overlay"], cv2.COLOR_BGR2RGB), caption="Red = affected area, blue line = leaf outline")
         st.caption("Estimate from colour only. Severity levels are a simplified grouping of Horsfall-Barratt classes.")
 
+# ---------- Virtual field (existing) ----------
 with tab2:
     st.write("Set each of the 9 field sections:")
     opts = ["healthy", "infected-Mild", "infected-Moderate", "infected-Severe", "retake"]
@@ -46,6 +97,7 @@ with tab2:
     if out["B"]["retake_cells"]:
         st.warning(f"Retake photos for sections: {[(r+1, c+1) for r, c in out['B']['retake_cells']]}")
 
+# ---------- Weather (existing) ----------
 with tab3:
     t = st.number_input("Temperature (C)", value=28.0)
     h = st.number_input("Humidity (%)", value=55.0)
