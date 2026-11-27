@@ -94,6 +94,16 @@ with tabPlan:
                     result = field_sim.compare(grid, buffer=buffer,
                                               sec_move=10, sec_spray=15, litres_per_cell=0.5)
                     weather = {"temp_c": t, "humidity_pct": h, "wind_kmh": w, "rain_pct": rn}
+                    if rows == 3 and cols == 3:
+                        for r in range(3):
+                            for c in range(3):
+                                cell = grid[r][c]
+                                if cell[0] == "infected":
+                                    st.session_state[f"sim{r}{c}"] = "infected-Moderate"
+                                elif cell[0] == "retake":
+                                    st.session_state[f"sim{r}{c}"] = "retake"
+                                else:
+                                    st.session_state[f"sim{r}{c}"] = "healthy"
                     plan = spray_plan.build_plan(cells, result, price_per_litre=(price if price > 0 else None), weather=weather, litres_per_cell=0.5)
                 except Exception:
                     st.error("Could not read this photo. Please try another.")
