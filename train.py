@@ -95,14 +95,14 @@ model.compile(optimizer="adam", loss="sparse_categorical_crossentropy", metrics=
 
 # ---- phase 1: frozen base, 5 epochs ----
 print("\n=== Phase 1: frozen base, 5 epochs ===")
-for ep in range(8):
+for ep in range(10):
     t0 = time.time()
     h = model.fit(train_ds, validation_data=val_ds, epochs=1, verbose=1)
     print(f"epoch {ep+1} time: {time.time()-t0:.1f}s  val_acc={h.history['val_accuracy'][-1]:.4f}")
 
 # ---- phase 2: unfreeze last 30 layers, lr 1e-5, 3 epochs ----
 base.trainable = True
-for layer in base.layers[:-30]:
+for layer in base.layers[:-50]:
     layer.trainable = False
 model.compile(optimizer=tf.keras.optimizers.Adam(1e-5),
               loss="sparse_categorical_crossentropy", metrics=["accuracy"])

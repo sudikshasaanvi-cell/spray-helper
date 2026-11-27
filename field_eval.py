@@ -10,7 +10,7 @@ import seaborn as sns
 
 import predict
 
-LAB_ACC = 0.8125  # from results/accuracy.txt (validation accuracy)
+LAB_ACC = 0.9130  # from results/accuracy.txt (validation accuracy)
 
 FIELD_DIR = "field_test"
 model, class_names = predict.load()

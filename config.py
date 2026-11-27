@@ -6,4 +6,4 @@ HEAT_THRESH = 0.5      # assumption: heatmap cutoff for spray/skip cells
 
 # CPU only (no GPU detected) -> smaller images and fewer per class
 IMG_SIZE = 160
-MAX_PER_CLASS = 200
+MAX_PER_CLASS = 1000

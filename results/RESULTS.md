@@ -2,9 +2,9 @@
 
 | Item | Value |
 |---|---|
-| Validation accuracy | 0.8125 (81.25%) |
-| Field accuracy (PlantDoc) | 0.2016 (150/744) |
-| Drop (lab -> field) | 61.1 points |
+| Validation accuracy | 0.9130 (91.30%) |
+| Field accuracy (PlantDoc) | 0.2231 (166/744) |
+| Drop (lab -> field) | 69.0 points |
 | Field photos used | 744 |
 | Severity examples | see results/severity_summary.txt |
 | Mode A (litres/s) | 4.5 L / 225 s |

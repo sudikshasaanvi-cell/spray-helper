@@ -7,16 +7,21 @@ from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
 
 import config
 
+_cached_model = None
+_cached_names = None
+
 CONF_MIN = config.CONF_MIN
 HEAT_THRESH = config.HEAT_THRESH
 IMG_SIZE = config.IMG_SIZE
 
 
 def load():
-    model = tf.keras.models.load_model("model/tomato.keras")
-    with open("model/class_names.json") as f:
-        class_names = json.load(f)
-    return model, class_names
+    global _cached_model, _cached_names
+    if _cached_model is None:
+        _cached_model = tf.keras.models.load_model("model/tomato.keras")
+        with open("model/class_names.json") as f:
+            _cached_names = json.load(f)
+    return _cached_model, _cached_names
 
 
 def _prep(img_bgr):
