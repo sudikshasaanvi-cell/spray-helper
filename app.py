@@ -4,6 +4,7 @@ import numpy as np
 import streamlit as st
 
 from severity import estimate_severity
+import field_sim
 from field_sim import compare, draw
 from weather_rules import check_weather
 import predict
