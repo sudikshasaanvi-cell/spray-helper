@@ -12,7 +12,7 @@ def _priority(level):
     return None
 
 
-def build_plan(cells, result, price_per_litre=None, weather=None):
+def build_plan(cells, result, price_per_litre=None, weather=None, litres_per_cell=0.5):
     # map (r,c) -> cell
     by_pos = {(c["row"], c["col"]): c for c in cells}
     route = result["B"]["route"]
@@ -49,6 +49,7 @@ def build_plan(cells, result, price_per_litre=None, weather=None):
             "priority": prio if prio else "-",
             "route_order": route_order.get(name),
             "nozzle": "ON" if nozzle_map.get(name) else "OFF",
+            "litres": (round(litres_per_cell, 2) if action == "Spray" else 0.0),
             "disease": cell.get("class"),
             "confidence": cell.get("confidence"),
             "severity": cell.get("severity"),

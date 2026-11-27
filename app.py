@@ -94,7 +94,7 @@ with tabPlan:
                     result = field_sim.compare(grid, buffer=buffer,
                                               sec_move=10, sec_spray=15, litres_per_cell=0.5)
                     weather = {"temp_c": t, "humidity_pct": h, "wind_kmh": w, "rain_pct": rn}
-                    plan = spray_plan.build_plan(cells, result, price_per_litre=(price if price > 0 else None), weather=weather)
+                    plan = spray_plan.build_plan(cells, result, price_per_litre=(price if price > 0 else None), weather=weather, litres_per_cell=0.5)
                 except Exception:
                     st.error("Could not read this photo. Please try another.")
                     st.stop()
@@ -131,6 +131,9 @@ with tabPlan:
             for step in plan["steps"]:
                 st.write(step)
             st.caption("Use the dose on your label.")
+            st.subheader("Spray amount per section")
+            amt_df = pd.DataFrame(plan["per_square"])[["cell", "action", "litres"]]
+            st.dataframe(amt_df, use_container_width=True)
             # 5. Simulation fills automatically from the detected grid
             st.subheader("Simulation (auto-filled from this photo)")
             figA = field_sim.draw(grid, result["A"], f"Mode A: spray all - {result['A']['litres']} L, {result['A']['seconds']} s")
