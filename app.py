@@ -2,10 +2,10 @@ import cv2
 import numpy as np
 import pandas as pd
 import streamlit as st
+import io
 
-st.set_page_config(page_title="Smart Spray Helper", page_icon="🌿", layout="wide")
+st.set_page_config(page_title="Smart Spray Planner", page_icon="🌿", layout="wide")
 
-# ---- CSS ----
 st.markdown("""
 <style>
 #MainMenu {visibility: hidden;}
@@ -23,16 +23,15 @@ html, body, [class*="css"] { font-size: 18px; }
 
 from severity import estimate_severity
 import field_sim
-from field_sim import compare, draw
 from weather_rules import check_weather
 import predict
 import rag
-import recommend
 import field_map
+import spray_plan
 import config
 
-st.markdown("<h1 style='font-size:42px;'>🌿 Smart Spray Helper</h1>", unsafe_allow_html=True)
-st.markdown("<p style='font-size:22px; color:#2E7D32;'><b>Take a photo. Know where to spray.</b></p>", unsafe_allow_html=True)
+st.markdown("<h1 style='font-size:42px;'>🌿 Smart Spray Planner</h1>", unsafe_allow_html=True)
+st.markdown("<p style='font-size:22px; color:#2E7D32;'><b>Spray only where it is needed.</b></p>", unsafe_allow_html=True)
 
 
 @st.cache_resource
@@ -44,7 +43,8 @@ def load_model():
 
 model, class_names = load_model()
 
-tabW, tabS, tabWeather = st.tabs(["🌾 Whole field", "🍃 Single leaf", "⛅ Weather"])
+tabPlan, tabSim, tabWeather, tabDetails = st.tabs(
+    ["Spray plan", "Simulation", "Weather", "Plant details"])
 
 
 def _clean(name):
@@ -53,32 +53,33 @@ def _clean(name):
     return name.split("___")[-1].replace("_", " ").strip()
 
 
-# ---------- Whole field ----------
-with tabW:
+# ---------- Spray plan ----------
+with tabPlan:
     left, right = st.columns([0.4, 0.6])
     with left:
-        st.markdown("<div class='card'>", unsafe_allow_html=True)
-        up = st.file_uploader("Upload a field photo", type=["jpg", "jpeg", "png"], key="wf")
+        up = st.file_uploader("Upload a field photo", type=["jpg", "jpeg", "png"], key="sp")
         st.caption("Take a close-up photo of your plants (about arm's length)")
-        if st.button("Try an example"):
+        if st.button("Try an example", key="sp_example"):
             try:
                 with open("samples/field_mosaic.png", "rb") as fh:
-                    st.session_state["wf_bytes"] = fh.read()
+                    st.session_state["sp_bytes"] = fh.read()
             except Exception:
                 st.warning("Could not load example photo.")
-        if "wf_bytes" in st.session_state:
-            up = None
-            img_bytes = st.session_state["wf_bytes"]
+        if "sp_bytes" in st.session_state:
+            img_bytes = st.session_state["sp_bytes"]
         else:
             img_bytes = up.read() if up is not None else None
-        with st.expander("Grid size (advanced)"):
-            rows = st.slider("Rows", 1, 6, 3, key="wrows")
-            cols = st.slider("Cols", 1, 6, 3, key="wcols")
-        with st.expander("Simulation settings (advanced)"):
-            sm = st.slider("Seconds to move across one section", 5, 30, 10, key="wsm")
-            ss = st.slider("Extra seconds to spray one section", 5, 30, 15, key="wss")
-            lp = st.slider("Litres per section (full dose)", 0.1, 2.0, 0.5, key="wlp")
-        st.markdown("</div>", unsafe_allow_html=True)
+
+        with st.expander("Inputs (advanced)"):
+            rows = st.slider("Grid rows", 1, 6, 3, key="sp_rows")
+            cols = st.slider("Grid cols", 1, 6, 3, key="sp_cols")
+            buffer = st.checkbox("Spread buffer (spray neighbours of infected)", key="sp_buffer")
+            price = st.number_input("Price per litre (optional)", value=0.0, min_value=0.0, key="sp_price")
+            st.subheader("Weather")
+            t = st.number_input("Temp (C)", value=28.0, key="sp_t")
+            h = st.number_input("Humidity (%)", value=55.0, key="sp_h")
+            w = st.number_input("Wind (km/h)", value=8.0, key="sp_w")
+            rn = st.number_input("Rain (%)", value=10.0, key="sp_rn")
 
     with right:
         if img_bytes is not None:
@@ -87,75 +88,117 @@ with tabW:
                     arr = np.frombuffer(img_bytes, np.uint8)
                     img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
                     if img is None:
-                        raise ValueError("bad image")
+                        raise ValueError("bad")
                     grid, cells, _ = field_map.analyze_field(img, rows, cols)
-                    result = field_sim.compare(grid, sec_move=sm, sec_spray=ss, litres_per_cell=lp)
+                    result = field_sim.compare(grid, buffer=buffer,
+                                              sec_move=10, sec_spray=15, litres_per_cell=0.5)
+                    weather = {"temp_c": t, "humidity_pct": h, "wind_kmh": w, "rain_pct": rn}
+                    plan = spray_plan.build_plan(cells, result, price_per_litre=(price if price > 0 else None), weather=weather)
                 except Exception:
                     st.error("Could not read this photo. Please try another.")
                     st.stop()
-            # 1. banner
-            n_cells = rows * cols
-            n_spray = sum(1 for c in cells if c["status"] == "infected")
-            n_retake = sum(1 for c in cells if c["status"] == "retake")
-            if n_spray == 0 and n_retake == 0:
-                st.markdown("<div class='banner banner-green'>No spraying needed</div>", unsafe_allow_html=True)
-            elif n_retake > 0:
-                st.markdown(f"<div class='banner banner-yellow'>Retake {n_retake} photo(s)</div>", unsafe_allow_html=True)
+            # 1. banner + gate
+            gate = plan["gate"]
+            headline = plan["headline"]
+            if "No spraying" in headline:
+                banner_class = "banner-green"
+            elif "Retake" in headline:
+                banner_class = "banner-yellow"
             else:
-                st.markdown(f"<div class='banner banner-red'>Spray {n_spray} of {n_cells} sections</div>", unsafe_allow_html=True)
-            # 2. overlay
+                banner_class = "banner-red"
+            st.markdown(f"<div class='banner {banner_class}'>{headline}</div>", unsafe_allow_html=True)
+            st.markdown(f"**Weather gate:** {gate}")
+            if plan["gate_reasons"]:
+                for r in plan["gate_reasons"]:
+                    st.write(f"- {r}")
+            # 2. spray map
             overlay = field_map.draw_field_map(img, cells, rows, cols)
             st.image(cv2.cvtColor(overlay, cv2.COLOR_BGR2RGB), use_column_width=True)
             # 3. metric cards
+            tot = plan["totals"]
             m1, m2, m3 = st.columns(3)
             with m1:
-                st.markdown(f"<div class='metric-card'><b>Pesticide saved</b><br><span style='font-size:32px;color:#2E7D32;'>{result['litres_saved_pct']}%</span></div>", unsafe_allow_html=True)
+                st.markdown(f"<div class='metric-card'><b>Pesticide saved</b><br><span style='font-size:32px;color:#2E7D32;'>{tot['litres_saved'] and round(100*(tot['litres_mode_a']-tot['litres_mode_b'])/tot['litres_mode_a'],1) if tot['litres_mode_a'] else 0}%</span></div>", unsafe_allow_html=True)
             with m2:
-                st.markdown(f"<div class='metric-card'><b>Litres (A vs B)</b><br><span style='font-size:22px;'>{result['A']['litres']} L → {result['B']['litres']} L</span></div>", unsafe_allow_html=True)
+                st.markdown(f"<div class='metric-card'><b>Litres (A vs B)</b><br><span style='font-size:22px;'>{tot['litres_mode_a']} → {tot['litres_mode_b']}</span></div>", unsafe_allow_html=True)
             with m3:
-                st.markdown(f"<div class='metric-card'><b>Time saved</b><br><span style='font-size:32px;color:#2E7D32;'>{result['time_saved_pct']}%</span></div>", unsafe_allow_html=True)
-            # 4. plain list
-            st.markdown(field_map.recommendation_text(cells, result).replace("\n", "<br>"), unsafe_allow_html=True)
-            # 5. route figure radio
-            route_choice = st.radio("Show route", ["Spray everything", "AI-targeted"], horizontal=True, key="route_choice")
-            mode_key = "A" if route_choice == "Spray everything" else "B"
-            fig = field_sim.draw(grid, result[mode_key],
-                                 f"{'Mode A' if mode_key=='A' else 'Mode B'}: {result[mode_key]['litres']} L, {result[mode_key]['seconds']} s")
+                st.markdown(f"<div class='metric-card'><b>Time saved</b><br><span style='font-size:32px;color:#2E7D32;'>{tot['time_saved_pct']}%</span></div>", unsafe_allow_html=True)
+            if tot["money_saved"] is not None:
+                st.write(f"Money saved: {tot['money_saved']}")
+            # 4. route steps
+            st.subheader("Route steps")
+            for step in plan["steps"]:
+                st.write(step)
+            st.caption("Use the dose on your label.")
+            # 5. Mode A vs B radio + one figure
+            choice = st.radio("Show route", ["Spray everything", "AI-targeted"], horizontal=True, key="sp_route")
+            mk = "A" if choice == "Spray everything" else "B"
+            fig = field_sim.draw(grid, result[mk], f"{'Mode A' if mk=='A' else 'Mode B'}: {result[mk]['litres']} L, {result[mk]['seconds']} s")
             st.pyplot(fig)
-            # 6. advice card
-            # find dominant disease
+            # 6. download buttons
+            df = pd.DataFrame(plan["per_square"])
+            csv_bytes = df.to_csv(index=False).encode()
+            st.download_button("Download spray_plan.csv", csv_bytes, "spray_plan.csv", "text/csv")
+            # map png
+            ok, buf = cv2.imencode(".png", overlay)
+            if ok:
+                st.download_button("Download map PNG", buf.tobytes(), "spray_map.png", "image/png")
+            # small caption disease
             diseases = [c["class"] for c in cells if c["status"] == "infected" and c["class"]]
-            dom = max(set(diseases), key=diseases.count) if diseases else None
-            if dom:
-                advice = rag.advice_for(dom)
-                if advice is None:
-                    st.info("Ask your agriculture officer.")
-                else:
-                    st.markdown("<div class='card'>", unsafe_allow_html=True)
-                    st.markdown(f"**{dom}**")
-                    for ch in advice:
-                        st.markdown(ch["text"][:400])
-                        st.markdown(f"Source: [{ch['source']}]({ch['source']})")
-                    st.markdown("</div>", unsafe_allow_html=True)
-            else:
-                st.info("Ask your agriculture officer.")
-            # 7. details expander
-            with st.expander("Details"):
-                df = pd.DataFrame([{
-                    "cell": c["name"],
-                    "disease": _clean(c["class"]) if c["class"] else c["status"],
-                    "confidence": c["confidence"],
-                    "severity %": c["severity"],
-                    "action": c["status"],
-                } for c in cells])
-                st.dataframe(df, use_container_width=True)
+            if diseases:
+                dom = max(set(diseases), key=diseases.count)
+                sev = [c["severity"] for c in cells if c["status"]=="infected" and c["class"]==dom and c["severity"] is not None]
+                pct = sev[0] if sev else ""
+                st.caption(f"why: {_clean(dom)}, {pct}%")
         else:
             st.info("Upload a photo or try the example to see results.")
 
 
-# ---------- Single leaf ----------
-with tabS:
-    up = st.file_uploader("Upload a tomato leaf photo", type=["jpg", "jpeg", "png"], key="sl")
+# ---------- Simulation ----------
+with tabSim:
+    st.write("Set each of the 9 field sections:")
+    opts = ["healthy", "infected-Mild", "infected-Moderate", "infected-Severe", "retake"]
+    grid = []
+    for r_ in range(3):
+        cols_, row = st.columns(3), []
+        for c_ in range(3):
+            v = cols_[c_].selectbox(f"Row {r_+1}, Col {c_+1}", opts, key=f"sim{r_}{c_}")
+            row.append(("infected", v.split("-")[1]) if v.startswith("infected") else (v, None))
+        grid.append(row)
+    st.subheader("Assumptions (simulation only)")
+    sm = st.slider("Seconds to move across one section", 5, 30, 10, key="sim_sm")
+    ss = st.slider("Extra seconds to spray one section", 5, 30, 15, key="sim_ss")
+    lp = st.slider("Litres per section (full dose)", 0.1, 2.0, 0.5, key="sim_lp")
+    buf = st.checkbox("Spread buffer", key="sim_buf")
+    out = field_sim.compare(grid, sec_move=sm, sec_spray=ss, litres_per_cell=lp, buffer=buf)
+    choice = st.radio("Show route", ["Spray everything", "AI-targeted"], horizontal=True, key="sim_route")
+    mk = "A" if choice == "Spray everything" else "B"
+    fig = field_sim.draw(grid, out[mk], f"{'Mode A' if mk=='A' else 'Mode B'}: {out[mk]['litres']} L, {out[mk]['seconds']} s")
+    st.pyplot(fig)
+    st.success(f"Pesticide saved: {out['litres_saved_pct']}%  |  Time saved: {out['time_saved_pct']}%")
+    if out["B"]["retake_cells"]:
+        st.warning(f"Retake photos for sections: {[(r+1, c+1) for r, c in out['B']['retake_cells']]}")
+    if out.get("buffer_cells"):
+        st.info(f"Buffer added: {out['buffer_cells']}")
+
+
+# ---------- Weather ----------
+with tabWeather:
+    t = st.number_input("Temperature (C)", value=28.0)
+    h = st.number_input("Humidity (%)", value=55.0)
+    w = st.number_input("Wind speed (km/h)", value=8.0)
+    rn = st.number_input("Rain chance (%)", value=10.0)
+    res = check_weather(t, h, w, rn)
+    st.header(res["decision"])
+    for rule in res["why"]:
+        st.write(f"- {rule['text']}  Source: [{rule['source']}]({rule['url']})")
+    for n in res["notes"]:
+        st.info(n)
+
+
+# ---------- Plant details ----------
+with tabDetails:
+    up = st.file_uploader("Upload a tomato leaf photo", type=["jpg", "jpeg", "png"], key="pd")
     if up:
         with st.spinner("Checking your plant..."):
             try:
@@ -201,17 +244,12 @@ with tabS:
                 for ch in advice:
                     st.markdown(ch["text"])
                     st.markdown(f"Source: [{ch['source']}]({ch['source']})")
-
-
-# ---------- Weather ----------
-with tabWeather:
-    t = st.number_input("Temperature (C)", value=28.0)
-    h = st.number_input("Humidity (%)", value=55.0)
-    w = st.number_input("Wind speed (km/h)", value=8.0)
-    rn = st.number_input("Rain chance (%)", value=10.0)
-    res = check_weather(t, h, w, rn)
-    st.header(res["decision"])
-    for rule in res["why"]:
-        st.write(f"- {rule['text']}  Source: [{rule['source']}]({rule['url']})")
-    for n in res["notes"]:
-        st.info(n)
+            # per-square table for a single leaf (one cell)
+            df = pd.DataFrame([{
+                "cell": "A1",
+                "disease": _clean(label),
+                "confidence": round(float(conf), 3),
+                "severity %": sev["pct"],
+                "action": "Spray" if label != "retake" and "healthy" not in label.lower() else ("Skip" if "healthy" in label.lower() else "Retake"),
+            }])
+            st.dataframe(df, use_container_width=True)

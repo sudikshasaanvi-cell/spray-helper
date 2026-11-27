@@ -6,7 +6,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-DOSE_FACTOR = {"Mild": 0.6, "Moderate": 1.0, "Severe": 1.4}  # assumption: more dose for worse cells
+DOSE_FACTOR = {"Mild": 1.0, "Moderate": 1.0, "Severe": 1.0}  # assumption: sprayed squares get the full label dose; we never change concentration; severity is for priority only
 COLORS = {"infected": "#e06666", "retake": "#ffd966", "healthy": "#93c47d"}
 
 
@@ -15,27 +15,41 @@ def snake_route(rows=3, cols=3):
     return [(r, c if r % 2 == 0 else cols - 1 - c) for r in range(rows) for c in range(cols)]
 
 
-def simulate(grid, mode, sec_move=10, sec_spray=15, litres_per_cell=0.5):
+def simulate(grid, mode, sec_move=10, sec_spray=15, litres_per_cell=0.5, buffer=False):
     """grid[r][c] = ("infected", "Mild|Moderate|Severe") | ("healthy", None) | ("retake", None)."""
-    route = snake_route(len(grid), len(grid[0]))
+    rows, cols = len(grid), len(grid[0])
+    route = snake_route(rows, cols)
+    # buffer: in Mode B, also spray orthogonal neighbours of infected cells
+    buffer_cells = []
+    if buffer and mode == "B":
+        infected = {(r, c) for r in range(rows) for c in range(cols) if grid[r][c][0] == "infected"}
+        for (r, c) in infected:
+            for dr, dc in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+                nr, nc = r + dr, c + dc
+                if 0 <= nr < rows and 0 <= nc < cols and grid[nr][nc][0] != "infected":
+                    if (nr, nc) not in buffer_cells:
+                        buffer_cells.append((nr, nc))
     nozzle, litres, seconds = [], 0.0, 0
     for r, c in route:
         status, level = grid[r][c]
-        spray = (mode == "A") or (mode == "B" and status == "infected")
+        spray = (mode == "A") or (mode == "B" and (status == "infected" or (buffer and (r, c) in buffer_cells)))
         seconds += sec_move + (sec_spray if spray else 0)
         if spray:
-            litres += litres_per_cell * (1.0 if mode == "A" else DOSE_FACTOR[level])
+            litres += litres_per_cell * (1.0 if mode == "A" else DOSE_FACTOR[level if level else "Moderate"])
         nozzle.append(spray)
     return {"mode": mode, "route": route, "nozzle_on": nozzle,
             "seconds": seconds, "litres": round(litres, 2),
-            "retake_cells": [(r, c) for r, c in route if grid[r][c][0] == "retake"]}
+            "retake_cells": [(r, c) for r, c in route if grid[r][c][0] == "retake"],
+            "buffer_cells": buffer_cells}
 
 
-def compare(grid, **kw):
-    a, b = simulate(grid, "A", **kw), simulate(grid, "B", **kw)
+def compare(grid, buffer=False, **kw):
+    a = simulate(grid, "A", **kw)
+    b = simulate(grid, "B", buffer=buffer, **kw)
     return {"A": a, "B": b,
             "litres_saved_pct": round(100 * (a["litres"] - b["litres"]) / a["litres"], 1),
-            "time_saved_pct": round(100 * (a["seconds"] - b["seconds"]) / a["seconds"], 1)}
+            "time_saved_pct": round(100 * (a["seconds"] - b["seconds"]) / a["seconds"], 1),
+            "buffer_cells": b.get("buffer_cells", [])}
 
 
 def draw(grid, result, title=""):
