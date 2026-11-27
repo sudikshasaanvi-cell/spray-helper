@@ -1,0 +1,8 @@
+.venv/
+data/
+field_test/
+__pycache__/
+*.zip
+kaggle.json
+qdrant_db/
+.env

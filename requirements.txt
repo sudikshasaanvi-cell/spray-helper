@@ -1,0 +1,13 @@
+tensorflow
+numpy
+opencv-python
+matplotlib
+seaborn
+scikit-learn
+pillow
+streamlit
+qdrant-client[fastembed]
+kaggle
+requests
+beautifulsoup4
+pypdf
