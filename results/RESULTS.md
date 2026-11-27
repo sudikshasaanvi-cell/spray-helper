@@ -4,6 +4,8 @@
 |---|---|
 | Validation accuracy | 0.9130 (91.30%) |
 | Field accuracy (PlantDoc) | 0.2231 (166/744) |
+| Held-out field accuracy after fine-tune | 0.2335 (53/227) |
+| Recommended CONF_MIN | 0.60 (from threshold table) |
 | Drop (lab -> field) | 69.0 points |
 | Field photos used | 744 |
 | Severity examples | see results/severity_summary.txt |

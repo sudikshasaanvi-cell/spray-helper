@@ -1,0 +1,6 @@
+Held-out field photos (30%): 227
+Accuracy after fine-tune: 0.2335 (53/227)
+
+
+Recommended CONF_MIN from threshold table: 0.60 (answered 50.7%, accuracy 0.461).
+Chosen as the highest threshold that keeps ~50% coverage (same as 0.50) while avoiding the steep coverage drop above 0.60; higher thresholds raise accuracy only modestly (0.61 at 0.90) but answer far fewer photos.
