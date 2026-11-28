@@ -43,8 +43,8 @@ def load_model():
 
 model, class_names = load_model()
 
-tabPlan, tabSim, tabWeather, tabDetails = st.tabs(
-    ["Spray plan", "Simulation", "Weather", "Plant details"])
+tabPlan, tabSim, tabWeather, tabDetails, tabRes = st.tabs(
+    ["Spray plan", "Simulation", "Weather", "Plant details", "📊 Results"])
 
 
 def _clean(name):
@@ -270,3 +270,27 @@ with tabDetails:
                 "action": "Spray" if label != "retake" and "healthy" not in label.lower() else ("Skip" if "healthy" in label.lower() else "Retake"),
             }])
             st.dataframe(df, use_container_width=True)
+
+
+# ---------- Results ----------
+with tabRes:
+    st.subheader("Confusion matrix (lab validation)")
+    try:
+        st.image("results/confusion_matrix.png", use_column_width=True)
+    except Exception:
+        st.info("confusion_matrix.png not found.")
+    st.subheader("Lab vs field accuracy")
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    fig, ax = plt.subplots()
+    ax.bar(["Lab (val)", "Field (PlantDoc)"], [0.9115, 0.2231], color=["#2E7D32", "#B71C1C"])
+    ax.set_ylabel("Accuracy")
+    ax.set_ylim(0, 1)
+    st.pyplot(fig)
+    st.caption("Field accuracy is much lower due to domain shift.")
+    st.subheader("Confidence threshold table")
+    try:
+        st.image("results/binary_threshold_table.png", use_column_width=True)
+    except Exception:
+        st.info("binary_threshold_table.png not found.")
