@@ -1,16 +1,16 @@
                                                precision    recall  f1-score   support
 
-                      Tomato___Bacterial_spot       0.75      0.97      0.85        40
-                        Tomato___Early_blight       0.85      0.42      0.57        40
-                         Tomato___Late_blight       0.83      0.88      0.85        40
-                           Tomato___Leaf_Mold       0.78      0.88      0.82        40
-                  Tomato___Septoria_leaf_spot       0.96      0.62      0.76        40
-Tomato___Spider_mites Two-spotted_spider_mite       0.73      0.82      0.78        40
-                         Tomato___Target_Spot       0.60      0.88      0.71        40
-       Tomato___Tomato_Yellow_Leaf_Curl_Virus       0.97      0.93      0.95        40
-                 Tomato___Tomato_mosaic_virus       1.00      0.80      0.89        40
-                             Tomato___healthy       0.88      0.93      0.90        40
+                      Tomato___Bacterial_spot       0.94      0.94      0.94       200
+                        Tomato___Early_blight       0.93      0.74      0.83       200
+                         Tomato___Late_blight       0.95      0.92      0.93       200
+                           Tomato___Leaf_Mold       0.96      0.94      0.95       200
+                  Tomato___Septoria_leaf_spot       0.92      0.91      0.91       200
+Tomato___Spider_mites Two-spotted_spider_mite       0.90      0.92      0.91       200
+                         Tomato___Target_Spot       0.80      0.90      0.85       200
+       Tomato___Tomato_Yellow_Leaf_Curl_Virus       1.00      0.97      0.98       200
+                 Tomato___Tomato_mosaic_virus       1.00      0.87      0.93       200
+                             Tomato___healthy       0.78      1.00      0.88       200
 
-                                     accuracy                           0.81       400
-                                    macro avg       0.84      0.81      0.81       400
-                                 weighted avg       0.84      0.81      0.81       400
+                                     accuracy                           0.91      2000
+                                    macro avg       0.92      0.91      0.91      2000
+                                 weighted avg       0.92      0.91      0.91      2000
