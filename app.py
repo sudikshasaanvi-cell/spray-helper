@@ -43,8 +43,8 @@ def load_model():
 
 model, class_names = load_model()
 
-tabPlan, tabSim, tabWeather, tabDetails, tabIoT = st.tabs(
-    ["Spray plan", "Simulation", "Weather", "Plant details", "📡 IoT Dashboard"])
+tabPlan, tabSim, tabWeather, tabDetails = st.tabs(
+    ["Spray plan", "Simulation", "Weather", "Plant details"])
 
 
 def _clean(name):
@@ -270,41 +270,3 @@ with tabDetails:
                 "action": "Spray" if label != "retake" and "healthy" not in label.lower() else ("Skip" if "healthy" in label.lower() else "Retake"),
             }])
             st.dataframe(df, use_container_width=True)
-
-
-# ---------- IoT Dashboard ----------
-with tabIoT:
-    st.subheader("Live field sensors (simulated)")
-    if "iot_history" not in st.session_state:
-        st.session_state["iot_history"] = []
-    # simulate new reading
-    import random, time
-    rng = random.Random(int(time.time()))
-    reading = {
-        "temp": round(rng.uniform(22, 34), 1),
-        "humidity": round(rng.uniform(30, 80), 1),
-        "soil_moisture": round(rng.uniform(20, 70), 1),
-        "rain": round(rng.uniform(0, 40), 1),
-    }
-    st.session_state["iot_history"].append(reading)
-    st.session_state["iot_history"] = st.session_state["iot_history"][-20:]
-    hist = st.session_state["iot_history"]
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Temperature (C)", reading["temp"])
-    c2.metric("Humidity (%)", reading["humidity"])
-    c3.metric("Soil moisture (%)", reading["soil_moisture"])
-    c4.metric("Rain (%)", reading["rain"])
-    # chart
-    import pandas as pd
-    df = pd.DataFrame(hist)
-    st.line_chart(df)
-    # spray trigger
-    if reading["soil_moisture"] < 35:
-        st.warning("Soil moisture low: consider spraying (check weather gate).")
-    else:
-        st.success("Soil moisture adequate: no spray needed.")
-    st.caption("Simulated sensor data. Connect real sensors via MQTT/HTTP for live values.")
-    try:
-        st.autorefresh(interval=5000, key="iot_refresh")
-    except Exception:
-        pass
