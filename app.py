@@ -124,7 +124,7 @@ with tabPlan:
                     st.write(f"- {r}")
             # 2. spray map
             overlay = field_map.draw_field_map(img, cells, rows, cols)
-            st.image(cv2.cvtColor(overlay, cv2.COLOR_BGR2RGB), use_column_width=True)
+            st.image(cv2.cvtColor(overlay, cv2.COLOR_BGR2RGB), width='stretch')
             # 3. metric cards
             tot = plan["totals"]
             m1, m2, m3 = st.columns(3)
@@ -276,7 +276,7 @@ with tabDetails:
 with tabRes:
     st.subheader("Confusion matrix (lab validation)")
     try:
-        st.image("results/confusion_matrix.png", use_column_width=True)
+        st.image("results/confusion_matrix.png", width='stretch')
     except Exception:
         st.info("confusion_matrix.png not found.")
     st.subheader("Lab vs field accuracy")
@@ -291,6 +291,6 @@ with tabRes:
     st.caption("Field accuracy is much lower due to domain shift.")
     st.subheader("Confidence threshold table")
     try:
-        st.image("results/binary_threshold_table.png", use_column_width=True)
+        st.image("results/binary_threshold_table.png", width='stretch')
     except Exception:
         st.info("binary_threshold_table.png not found.")
